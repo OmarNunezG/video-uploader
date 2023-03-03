@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "core",
     "user",
+    "video",
 ]
 
 REST_FRAMEWORK = {
