@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from core import models
 
@@ -60,3 +61,35 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_created_by(self, obj):
         user = obj.created_by
         return user.username
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    """Serializer for video likes"""
+
+    class Meta:
+        model = models.VideoLike
+        fields = "__all__"
+        read_only_fields = ("id",)
+
+    def create(self, validated_data):
+        """Creates a new like and updates the video likes count"""
+        video_id = validated_data["video"]
+        video = models.Video.objects.get(id=video_id)
+        video.likes += 1
+        video.save()
+
+        user_id = validated_data["liked_by"]
+        user = get_user_model().objects.get(id=user_id)
+
+        validated_data["video"] = video
+        validated_data["liked_by"] = user
+
+        return super().create(validated_data)
+
+    def delete(self, validated_data):
+        """Deletes a like and updates the video likes count"""
+        video = validated_data["video"]
+        video.likes -= 1
+        video.save()
+
+        return super().delete(validated_data)
