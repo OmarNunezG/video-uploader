@@ -252,3 +252,103 @@ class VideoDetailView(APIView):
                 response,
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class CommentListView(APIView):
+    """
+    Video comment view for creating and listing comments
+    Allowed methods: GET, POST
+    """
+
+    serializer_class = serializers.CommentSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+    queryset = models.Comment.objects
+
+    def get(self, request, id, format=None):
+        """
+        List all comments for a video
+        """
+
+        try:
+            video = models.Video.objects.get(id=id)
+            comments = self.queryset.filter(video=video)
+            serializer = self.serializer_class(comments, many=True)
+            response = serializer.data
+            return Response(response, status=status.HTTP_200_OK)
+        except models.Video.DoesNotExist:
+            response = {
+                "status": "404",
+                "title": "Not Found",
+                "detail": "The video was not found",
+            }
+            return Response(
+                response,
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception:
+            response = {
+                "status": "500",
+                "title": "Internal Server Error",
+                "detail": "There was an error retrieving the comments",
+            }
+            return Response(
+                response,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def post(self, request, id, format=None):
+        """
+        Create a comment for a video
+        """
+
+        try:
+            video = models.Video.objects.get(id=id)
+            data = request.data
+            data["video"] = video.id
+
+            serializer = self.serializer_class(data=data, many=False)
+            if not serializer.is_valid():
+                response = {
+                    "status": "400",
+                    "title": "Bad Request",
+                    "detail": serializer.errors,
+                }
+                return Response(
+                    response,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user = request.user
+            serializer.save(created_by=user)
+
+            response = serializer.data
+            headers = {"Location": reverse("video:comment", args=[video.id])}
+            return Response(
+                response,
+                status=status.HTTP_201_CREATED,
+                headers=headers,
+            )
+        except models.Video.DoesNotExist:
+            """Return a 404 error if the video was not found"""
+
+            response = {
+                "status": "404",
+                "title": "Not Found",
+                "detail": "The video was not found",
+            }
+            return Response(
+                response,
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception:
+            """Return a 500 error if there was an error creating the comment"""
+
+            response = {
+                "status": "500",
+                "title": "Internal Server Error",
+                "detail": "There was an error creating the comment",
+            }
+            return Response(
+                response,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

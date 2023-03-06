@@ -41,3 +41,22 @@ class VideoSerializer(serializers.ModelSerializer):
     def get_created_by(self, obj):
         user = obj.created_by
         return user.username
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Serializer for video comments"""
+
+    created_at = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Comment
+        fields = "__all__"
+        read_only_fields = ("id", "created_at", "created_by", "likes")
+
+    def get_created_at(self, obj):
+        return obj.created_at.strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_created_by(self, obj):
+        user = obj.created_by
+        return user.username
