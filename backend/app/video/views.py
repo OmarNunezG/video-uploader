@@ -149,7 +149,8 @@ class VideoDetailView(APIView):
                 response = {
                     "status": "403",
                     "title": "Forbidden",
-                    "detail": "You do not have permission to update this video",
+                    "detail": "You do not have permission to update"
+                    + " this video",
                 }
                 return Response(
                     response,
@@ -169,14 +170,15 @@ class VideoDetailView(APIView):
                 return Response(
                     response,
                     status=status.HTTP_400_BAD_REQUEST,
-                    headers=headers,
                 )
 
             serializer.save()
 
             response = serializer.data
             headers = {"Location": reverse("video:detail", args=[video.id])}
-            return Response(response, status=status.HTTP_200_OK)
+            return Response(
+                response, status=status.HTTP_200_OK, headers=headers
+            )
 
         except models.Video.DoesNotExist:
             """Return a 404 error if the video was not found"""
@@ -216,7 +218,8 @@ class VideoDetailView(APIView):
                 response = {
                     "status": "403",
                     "title": "Forbidden",
-                    "detail": "You do not have permission to delete this video",
+                    "detail": "You do not have permission to delete"
+                    + " this video",
                 }
                 return Response(
                     response,
