@@ -105,3 +105,34 @@ class PrivateVideoApiTests(APITestCase):
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_comment_video_success(self):
+        """Test commenting on a video"""
+        url = reverse("video:comment", args=[self.video.id])
+
+        payload = {"text": "Test Comment"}
+
+        res = self.client.post(url, payload, format="json")
+        data = res.data
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertIn("Location", res.headers)
+        self.assertEqual(data["text"], payload["text"])
+        self.assertEqual(data["video"], self.video.id)
+
+    def test_retrieve_comments_success(self):
+        """Test retrieving comments on a video"""
+        models.Comment.objects.create(
+            text="Test Comment 1", video=self.video, created_by=self.user
+        )
+        models.Comment.objects.create(
+            text="Test Comment 2", video=self.video, created_by=self.user
+        )
+
+        url = reverse("video:comment", args=[self.video.id])
+        res = self.client.get(url)
+
+        data = res.data
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(data), 2)
