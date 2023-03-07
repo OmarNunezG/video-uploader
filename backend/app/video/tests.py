@@ -136,3 +136,42 @@ class PrivateVideoApiTests(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(data), 2)
+
+    def test_like_video_success(self):
+        """Test liking a video"""
+        url = reverse("video:like", args=[self.video.id])
+
+        res = self.client.post(url)
+        self.video.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertNotIn("Location", res.headers)
+        self.assertEqual(self.video.likes, 1)
+
+    def test_retrieve_likes_success(self):
+        """Test retrieving likes count on a video"""
+        models.VideoLike.objects.create(video=self.video, liked_by=self.user)
+        self.video.likes += 1
+        self.video.save()
+
+        url = reverse("video:like", args=[self.video.id])
+        res = self.client.get(url)
+        self.video.refresh_from_db()
+        data = res.data
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(self.video.likes, 1)
+
+    def test_dislike_video_success(self):
+        """Test disliking a video"""
+        models.VideoLike.objects.create(video=self.video, liked_by=self.user)
+        self.video.likes += 1
+        self.video.save()
+
+        url = reverse("video:like", args=[self.video.id])
+        res = self.client.delete(url)
+        self.video.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(self.video.likes, 1)
