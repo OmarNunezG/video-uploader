@@ -352,3 +352,151 @@ class CommentListView(APIView):
                 response,
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class LikeListView(APIView):
+    """
+    View for counting and liking videos
+    Allowed methods: GET, POST, DELETE
+    """
+
+    serializer_class = serializers.LikeSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+    queryset = models.VideoLike.objects
+
+    def get(self, request, id, format=None):
+        """
+        Count the number of likes for a video
+        """
+
+        try:
+            video = models.Video.objects.get(id=id)
+            likes = self.queryset.filter(video=video)
+            count = likes.count()
+            response = {"count": count}
+            return Response(response, status=status.HTTP_200_OK)
+        except models.Video.DoesNotExist:
+            response = {
+                "status": "404",
+                "title": "Not Found",
+                "detail": "The video was not found",
+            }
+            return Response(
+                response,
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception:
+            response = {
+                "status": "500",
+                "title": "Internal Server Error",
+                "detail": "There was an error retrieving the likes",
+            }
+            return Response(
+                response,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def post(self, request, id, format=None):
+        """
+        Like a video
+        """
+
+        try:
+            video = models.Video.objects.get(id=id)
+            user = request.user
+            like = self.queryset.filter(video=video, liked_by=user)
+
+            if like.exists():
+                response = {
+                    "status": "400",
+                    "title": "Bad Request",
+                    "detail": "You have already liked this video",
+                }
+                return Response(
+                    response,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            data = {"video": id, "liked_by": user.id}
+            serializer = self.serializer_class(data=data, many=False)
+            if not serializer.is_valid():
+                response = {
+                    "status": "400",
+                    "title": "Bad Request",
+                    "detail": serializer.errors,
+                }
+                return Response(
+                    response,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            serializer.save(**data)
+            return Response(status=status.HTTP_201_CREATED)
+        except models.Video.DoesNotExist:
+            """Return a 404 error if the video was not found"""
+
+            response = {
+                "status": "404",
+                "title": "Not Found",
+                "detail": "The video was not found",
+            }
+            return Response(response, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            """Return a 500 error if there was an error liking the video"""
+
+            print(e)
+            response = {
+                "status": "500",
+                "title": "Internal Server Error",
+                "detail": "There was an error liking the video",
+            }
+            return Response(
+                response,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def delete(self, request, id, format=None):
+        """
+        Unlike a video
+        """
+
+        try:
+            video = models.Video.objects.get(id=id)
+            user = request.user
+            like = self.queryset.filter(video=video, liked_by=user)
+
+            if not like.exists():
+                response = {
+                    "status": "400",
+                    "title": "Bad Request",
+                    "detail": "You have not liked this video",
+                }
+                return Response(
+                    response,
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            like.delete()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except models.Video.DoesNotExist:
+            """Return a 404 error if the video was not found"""
+
+            response = {
+                "status": "404",
+                "title": "Not Found",
+                "detail": "The video was not found",
+            }
+            return Response(response, status=status.HTTP_404_NOT_FOUND)
+        except Exception:
+            """Return a 500 error if there was an error unliking the video"""
+
+            response = {
+                "status": "500",
+                "title": "Internal Server Error",
+                "detail": "There was an error unliking the video",
+            }
+            return Response(
+                response,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
