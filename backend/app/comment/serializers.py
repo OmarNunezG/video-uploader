@@ -16,3 +16,24 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_created_by(self, obj):
         return obj.created_by.username
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CommentLike
+        fields = "__all__"
+        read_only_fields = ("id",)
+
+    def create(self, validated_data):
+        comment = validated_data["comment"]
+        comment.likes += 1
+        comment.save()
+
+        return super().create(validated_data)
+
+    def delete(self, instance):
+        comment = instance.comment
+        comment.likes -= 1
+        comment.save()
+
+        instance.delete()
