@@ -93,3 +93,66 @@ class CommentPrivateAPITests(APITestCase):
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_like_comment_forbidden(self):
+        """Test liking a comment"""
+        url = reverse("comment:like", args=[self.comment.id])
+        res = self.client.post(url)
+        data = res.data
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(data["status"], "403")
+        self.assertEqual(data["title"], "Forbidden")
+
+    def test_dislike_comment_forbidden(self):
+        """Test unliking a comment"""
+        url = reverse("comment:like", args=[self.comment.id])
+        res = self.client.delete(url)
+        data = res.data
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(data["status"], "403")
+        self.assertEqual(data["title"], "Forbidden")
+
+    def test_like_comment_success(self):
+        """Test liking a comment"""
+        user = get_user_model().objects.create(
+            first_name="Test",
+            last_name="User",
+            username="testuser2",
+            email="testusername2@example.com",
+            password="testpass",
+        )
+
+        url = reverse("comment:like", args=[self.comment.id])
+        self.client.force_authenticate(user=user)
+        res = self.client.post(url)
+        data = res.data
+        self.comment.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(data)
+        self.assertEqual(self.comment.likes, 1)
+
+    def test_dislike_comment_success(self):
+        """Test unliking a comment"""
+        user = get_user_model().objects.create(
+            first_name="Test",
+            last_name="User",
+            username="testuser2",
+            email="testusername2@example.com",
+            password="testpass",
+        )
+        models.CommentLike.objects.create(liked_by=user, comment=self.comment)
+        self.comment.likes = 1
+        self.comment.save()
+
+        url = reverse("comment:like", args=[self.comment.id])
+        self.client.force_authenticate(user=user)
+        res = self.client.delete(url)
+        data = res.data
+        self.comment.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIsNone(data)
+        self.assertEqual(self.comment.likes, 0)
