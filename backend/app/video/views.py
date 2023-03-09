@@ -371,9 +371,8 @@ class LikeListView(APIView):
 
         try:
             video = models.Video.objects.get(id=id)
-            likes = self.queryset.filter(video=video)
-            count = likes.count()
-            response = {"count": count}
+            likes = video.likes
+            response = {"count": likes}
             return Response(response, status=status.HTTP_200_OK)
         except models.Video.DoesNotExist:
             response = {
@@ -441,10 +440,9 @@ class LikeListView(APIView):
                 "detail": "The video was not found",
             }
             return Response(response, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
+        except Exception:
             """Return a 500 error if there was an error liking the video"""
 
-            print(e)
             response = {
                 "status": "500",
                 "title": "Internal Server Error",
@@ -476,7 +474,8 @@ class LikeListView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            like.delete()
+            serializer = self.serializer_class()
+            serializer.delete(like.first())
 
             return Response(status=status.HTTP_204_NO_CONTENT)
         except models.Video.DoesNotExist:

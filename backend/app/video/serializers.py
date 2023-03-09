@@ -86,10 +86,10 @@ class LikeSerializer(serializers.ModelSerializer):
 
         return super().create(validated_data)
 
-    def delete(self, validated_data):
+    def delete(self, instance):
         """Deletes a like and updates the video likes count"""
-        video = validated_data["video"]
+        video = instance.video
         video.likes -= 1
         video.save()
 
-        return super().delete(validated_data)
+        instance.delete()

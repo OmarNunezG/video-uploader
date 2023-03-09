@@ -174,4 +174,4 @@ class PrivateVideoApiTests(APITestCase):
         self.video.refresh_from_db()
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(self.video.likes, 1)
+        self.assertEqual(self.video.likes, 0)
