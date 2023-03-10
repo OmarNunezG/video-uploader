@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from core import models
 
@@ -73,16 +72,10 @@ class LikeSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Creates a new like and updates the video likes count"""
-        video_id = validated_data["video"]
-        video = models.Video.objects.get(id=video_id)
+
+        video = validated_data["video"]
         video.likes += 1
         video.save()
-
-        user_id = validated_data["liked_by"]
-        user = get_user_model().objects.get(id=user_id)
-
-        validated_data["video"] = video
-        validated_data["liked_by"] = user
 
         return super().create(validated_data)
 
