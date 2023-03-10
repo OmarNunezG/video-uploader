@@ -156,3 +156,42 @@ class CommentPrivateAPITests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         self.assertIsNone(data)
         self.assertEqual(self.comment.likes, 0)
+
+    def test_retieve_comment_replies_success(self):
+        """Test retrieve comment replies"""
+        user = get_user_model().objects.create(
+            first_name="Test",
+            last_name="User",
+            username="testuser2",
+            email="testusername2@example.com",
+            password="testpass",
+        )
+        models.CommentReply.objects.create(
+            text="Test reply", created_by=user, comment=self.comment
+        )
+
+        url = reverse("comment:reply", args=[self.comment.id])
+        res = self.client.get(url)
+        data = res.data
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(data), 1)
+
+    def test_create_comment_reply_success(self):
+        """Test creating a comment reply"""
+        user = get_user_model().objects.create(
+            first_name="Test",
+            last_name="User",
+            username="testuser2",
+            email="testusername2@example.com",
+            password="testpass",
+        )
+
+        payload = {"text": "Test reply"}
+        url = reverse("comment:reply", args=[self.comment.id])
+        self.client.force_authenticate(user=user)
+        res = self.client.post(url, payload, format="json")
+        data = res.data
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(data)
