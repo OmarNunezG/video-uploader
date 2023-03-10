@@ -37,3 +37,15 @@ class LikeSerializer(serializers.ModelSerializer):
         comment.save()
 
         instance.delete()
+
+
+class ReplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CommentReply
+        fields = ("id", "text", "comment", "likes", "created_by")
+        read_only_fields = ("id",)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["created_by"] = instance.created_by.username
+        return representation

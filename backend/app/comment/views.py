@@ -304,3 +304,94 @@ class LikeView(APIView):
             return Response(
                 response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class ReplyView(APIView):
+    """
+    Reply view for listing and replying to comments
+    Allowed methods: GET, POST
+    """
+
+    serializer_class = serializers.ReplySerializer
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+    queryset = models.CommentReply.objects
+
+    def get(self, request, id, format=None):
+        """List replies for a comment"""
+
+        try:
+            comment = models.Comment.objects.get(id=id)
+            replies = self.queryset.filter(comment=comment)
+            serializer = self.serializer_class(replies, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except models.Comment.DoesNotExist:
+            """Return 404 if comment not found"""
+
+            response = {
+                "status": "404",
+                "title": "Not Found",
+                "detail": "Comment not found",
+            }
+            return Response(response, status=status.HTTP_404_NOT_FOUND)
+        except Exception:
+            """Return 500 if server error"""
+
+            response = {
+                "status": "500",
+                "title": "Internal Server Error",
+                "detail": "Server error",
+            }
+            return Response(
+                response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def post(self, request, id, format=None):
+        """Reply to a comment"""
+
+        try:
+            data = request.data
+            if not data:
+                """Return 400 if data is empty"""
+
+                response = {
+                    "status": "400",
+                    "title": "Bad Request",
+                    "detail": "Data is required",
+                }
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+            user = request.user
+
+            data["comment"] = id
+            data["created_by"] = user.id
+            serializer = self.serializer_class(data=data, many=False)
+
+            if not serializer.is_valid():
+                """Return 400 if serializer is not valid"""
+
+                return Response(
+                    serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            serializer.save()
+            return Response(status=status.HTTP_201_CREATED)
+        except models.Comment.DoesNotExist:
+            """Return 404 if comment not found"""
+
+            response = {
+                "status": "404",
+                "title": "Not Found",
+                "detail": "Comment not found",
+            }
+            return Response(response, status=status.HTTP_404_NOT_FOUND)
+        except Exception:
+            """Return 500 if server error"""
+
+            response = {
+                "status": "500",
+                "title": "Internal Server Error",
+                "detail": "Server error",
+            }
+            return Response(
+                response, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
