@@ -429,7 +429,7 @@ class LikeListView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            serializer.save(**data)
+            serializer.save()
             return Response(status=status.HTTP_201_CREATED)
         except models.Video.DoesNotExist:
             """Return a 404 error if the video was not found"""
